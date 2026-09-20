@@ -1,0 +1,22 @@
+{
+  "name": "imgui-storybook",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Storybook for Dear ImGui: real ImGui rendering (host-side) streamed into the Storybook web UI, with static captures for humans and AI models.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "app"
+  ],
+  "scripts": {
+    "gen": "node scripts/gen-stories.mjs",
+    "capture": "node scripts/capture.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build:site": "node scripts/build-site.mjs",
+    "test:java": "cd java-host && ./gradlew --quiet test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

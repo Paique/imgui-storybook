@@ -1,0 +1,23 @@
+# Node
+node_modules/
+*.log
+
+# Generated artifacts (regenerable via scripts)
+app/stories/imgui/
+app/public/captures/
+dist-site/
+
+# Gradle / Java
+.gradle/
+java-host/**/build/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local
+.zcode/
+imgui.ini
