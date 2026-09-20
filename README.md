@@ -102,7 +102,9 @@ java -cp "your-mod-classpath;imgui-storybook-host/*" com.lattestudio.imguistoryb
 npm run dev   # storybook picks it up on ws://localhost:8765
 ```
 
-Regenerate the CSF bridge after adding stories: `npm run gen`.
+Or let the npm tooling join the classpath for you: set `IMGUI_HOST_CLASSPATH` to your project's runtime classpath and every script (`dev`, `gen`, `capture`, `build:site`) runs the host with your stories. Your product's fonts and style come from a consumer `StoryTheme`: register one implementation on `META-INF/services/com.lattestudio.imguistorybook.api.StoryTheme` (alongside your stories) and the host picks the first provider on the classpath — `StoryTheme.DEFAULT` (raw ImGui) otherwise.
+
+Regenerate the CSF bridge after adding stories: `npm run gen` (add `--no-demo` to cover only your stories; `npm run capture -- --no-demo` does the same for captures).
 
 ## Writing stories (Rust)
 

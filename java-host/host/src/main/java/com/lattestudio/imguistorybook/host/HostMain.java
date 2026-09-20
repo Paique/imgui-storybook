@@ -15,6 +15,8 @@ import com.lattestudio.imguistorybook.host.net.InputInjector;
 import com.lattestudio.imguistorybook.host.net.Protocol;
 import com.lattestudio.imguistorybook.host.net.WsServer;
 
+import java.util.ServiceLoader;
+
 /**
  * Entry point of the Java host.
  *
@@ -40,8 +42,10 @@ public final class HostMain {
                 case LIST -> System.out.println(new GsonBuilder().setPrettyPrinting().create()
                         .toJson(StoryCatalog.toJson(registry, HostInfo.hostVersion(),
                                 HostInfo.imguiJavaVersion())));
-                case CAPTURE -> CaptureRunner.run(cli, registry, StoryTheme.DEFAULT);
-                case SERVE -> serve(cli, registry);
+                // loadStoryTheme prints to stdout; keep it out of --list, whose stdout is the
+                // catalog JSON consumed by the TS generator.
+                case CAPTURE -> CaptureRunner.run(cli, registry, loadStoryTheme());
+                case SERVE -> serve(cli, registry, loadStoryTheme());
             }
         } catch (Exception e) {
             System.err.println(Cli.usage());
@@ -51,9 +55,21 @@ public final class HostMain {
         }
     }
 
-    private static void serve(Cli cli, StoryRegistry registry) throws Exception {
+    /**
+     * Consumer-provided fonts+style (META-INF/services/com.lattestudio.imguistorybook.api.StoryTheme);
+     * the first provider wins, raw ImGui defaults otherwise.
+     */
+    private static StoryTheme loadStoryTheme() {
+        for (StoryTheme theme : ServiceLoader.load(StoryTheme.class, HostMain.class.getClassLoader())) {
+            System.out.println("story theme: " + theme.id());
+            return theme;
+        }
+        return StoryTheme.DEFAULT;
+    }
+
+    private static void serve(Cli cli, StoryRegistry registry, StoryTheme theme) throws Exception {
         try (HeadlessGl gl = new HeadlessGl(cli.width(), cli.height())) {
-            ImGuiHost host = new ImGuiHost(gl, StoryTheme.DEFAULT);
+            ImGuiHost host = new ImGuiHost(gl, theme);
             host.init();
             ViewState state = new ViewState();
             InputInjector input = new InputInjector();

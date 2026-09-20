@@ -53,6 +53,7 @@ public final class CaptureRunner {
             JsonArray entriesJson = new JsonArray();
             int count = 0;
             for (StoryRegistry.Entry entry : registry.entries()) {
+                host.clearActions();
                 List<String> presetNames = new ArrayList<>();
                 presetNames.add("default");
                 presetNames.addAll(entry.args().presets().keySet());
@@ -67,7 +68,7 @@ public final class CaptureRunner {
                             view.setTheme(themeMode);
                             view.setBackdrop(themeMode == Theme.LIGHT
                                     ? Backdrop.NEUTRAL_LIGHT : Backdrop.NEUTRAL_DARK);
-                            view.setCanvasMode(CanvasMode.WINDOWED);
+                            view.setCanvasMode(entry.story().fullscreen() ? CanvasMode.INLINE : CanvasMode.WINDOWED);
                             host.setScale(scale);
 
                             // warm-up frames so auto-resized windows settle

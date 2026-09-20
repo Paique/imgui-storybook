@@ -46,12 +46,17 @@ public final class FrameGrabber {
 
     /** @param quality 0..100 */
     public byte[] jpeg(ByteBuffer rgba, int width, int height, int quality) {
+        rgba.position(0);
+        rgba.limit(width * height * RGBA);
+        // stbi_write_jpg_to_func returns int (0/1) on LWJGL 3.4.x; png returns boolean.
         return encode("jpeg", (out, callback) ->
-                STBImageWrite.stbi_write_jpg_to_func(callback, 0L, width, height, RGBA, rgba, quality),
+                STBImageWrite.stbi_write_jpg_to_func(callback, 0L, width, height, RGBA, rgba, quality) != 0,
                 width, height);
     }
 
     public void png(ByteBuffer rgba, int width, int height, Path file) {
+        rgba.position(0);
+        rgba.limit(width * height * RGBA);
         byte[] bytes = encode("png", (out, callback) ->
                 STBImageWrite.stbi_write_png_to_func(callback, 0L, width, height, RGBA, rgba, width * RGBA),
                 width, height);
@@ -78,8 +83,6 @@ public final class FrameGrabber {
                 out.write(bytes, 0, size);
             }
         }) {
-            rgba.position(0);
-            rgba.limit(width * height * RGBA);
             if (!call.run(out, callback)) {
                 throw new IllegalStateException(format + " encode failed");
             }

@@ -9,6 +9,7 @@ import com.lattestudio.imguistorybook.host.gl.HeadlessGl;
 import com.lattestudio.imguistorybook.host.net.InputInjector;
 import imgui.ImGui;
 import imgui.ImGuiIO;
+import imgui.ImGuiViewport;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import imgui.ImVec2;
@@ -18,6 +19,9 @@ import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import org.lwjgl.glfw.GLFWNativeWin32;
+import org.lwjgl.system.Platform;
 
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.glClear;
@@ -75,6 +79,21 @@ public final class ImGuiHost implements AutoCloseable {
         theme.loadFonts(ImGui.getIO(), scale);
         imGuiGl3.shutdown();
         imGuiGl3.init(GLSL_VERSION);
+        restorePlatformHandles();
+    }
+
+    /**
+     * Re-points the main viewport at our GLFW window. The GL3 backend's shutdown tears down the
+     * platform interfaces and nulls the main viewport's platform handle; the next
+     * {@code imGuiGlfw.newFrame()} then reads it in {@code updateMouseData} and crashes on
+     * {@code glfwGetWindowAttrib(NULL)} if nobody restores it.
+     */
+    private void restorePlatformHandles() {
+        ImGuiViewport mainViewport = ImGui.getMainViewport();
+        mainViewport.setPlatformHandle(gl.window());
+        if (Platform.get() == Platform.WINDOWS) {
+            mainViewport.setPlatformHandleRaw(GLFWNativeWin32.glfwGetWin32Window(gl.window()));
+        }
     }
 
     public void setActionListener(Consumer<ActionEvent> listener) {
@@ -92,6 +111,13 @@ public final class ImGuiHost implements AutoCloseable {
         Consumer<ActionEvent> listener = actionListener;
         if (listener != null) {
             listener.accept(event);
+        }
+    }
+
+    /** Drops queued action toasts, so one story's actions don't bleed into the next capture. */
+    public void clearActions() {
+        synchronized (actions) {
+            actions.clear();
         }
     }
 
@@ -201,7 +227,7 @@ public final class ImGuiHost implements AutoCloseable {
                              HostedStoryContext ctx) {
         ctx.update(entry, args, view);
         Story story = entry.story();
-        if (view.canvasMode() == CanvasMode.WINDOWED) {
+        if (view.canvasMode() == CanvasMode.WINDOWED && !entry.story().fullscreen()) {
             ImGui.setNextWindowPos(CANVAS_PADDING, CANVAS_PADDING, imgui.flag.ImGuiCond.Appearing);
             int flags = imgui.flag.ImGuiWindowFlags.NoCollapse
                     | imgui.flag.ImGuiWindowFlags.NoSavedSettings;

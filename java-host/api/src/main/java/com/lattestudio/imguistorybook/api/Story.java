@@ -22,6 +22,15 @@ public interface Story {
     default void defineArgs(ArgSet args) {
     }
 
+    /**
+     * Screen-like stories render bare on the full canvas (like the in-game
+     * frame) instead of inside a titled auto-resized window. Captures honor
+     * this too, so full-frame compositions are captured full-bleed.
+     */
+    default boolean fullscreen() {
+        return false;
+    }
+
     /** Renders the story for the current frame. Called once per frame by the host. */
     void render(StoryContext ctx);
 }

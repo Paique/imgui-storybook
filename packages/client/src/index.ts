@@ -41,6 +41,8 @@ interface Surface {
   paint(frame: Frame): void;
   onAction(name: string): void;
   onStatus(status: Status): void;
+  /** Host rejected something (e.g. `unknown story` after a select). */
+  onHostError?(message: string): void;
 }
 
 const DEFAULT_HOST_URL = 'ws://localhost:8765';
@@ -158,6 +160,7 @@ class HostConnection {
           break;
         case 'error':
           console.warn('[imgui-storybook] host:', message.message);
+          this.surface?.onHostError?.(message.message);
           break;
         default:
           break;
@@ -297,6 +300,7 @@ export function mountImGuiStory(options: ImGuiStoryMountOptions): HTMLElement {
     }
   }
   let imgTried = false;
+  let imgFailed = false;
   const showStatic = () => {
     canvas.style.display = 'none';
     if (!imgTried) {
@@ -304,10 +308,14 @@ export function mountImGuiStory(options: ImGuiStoryMountOptions): HTMLElement {
       staticImg.src = `${capturesBase}/imgui/${options.storyId}/${preset}-${theme}.png`;
       staticImg.onerror = () => {
         staticImg.style.display = 'none';
-        notice.style.display = 'block';
+        imgFailed = true;
       };
     }
-    staticImg.style.display = 'block';
+    if (imgFailed) {
+      notice.style.display = 'block';
+    } else {
+      staticImg.style.display = 'block';
+    }
   };
 
   // --- live painting ---------------------------------------------------------
@@ -360,6 +368,11 @@ export function mountImGuiStory(options: ImGuiStoryMountOptions): HTMLElement {
       } else {
         showStatic();
       }
+    },
+    onHostError(message) {
+      // The host rejected this story (e.g. started without the consumer classpath) — show the
+      // static capture instead of an empty canvas under a LIVE badge.
+      if (/unknown story/i.test(message)) showStatic();
     },
   };
 

@@ -9,5 +9,12 @@ const themes = process.argv.includes('--themes')
   : 'light,dark';
 
 console.log(`[capture] ${hostLabel()} rendering captures into ${path.relative(paths.root, outDir)} ...`);
-await runHost(['--capture', '--out', outDir, '--themes', themes], { timeoutMs: 600_000 });
+const captureArgs = ['--capture', '--out', outDir, '--themes', themes];
+if (process.argv.includes('--no-demo')) captureArgs.push('--no-demo');
+for (const flag of ['--width', '--height', '--scales']) {
+  if (process.argv.includes(flag)) {
+    captureArgs.push(flag, process.argv[process.argv.indexOf(flag) + 1]);
+  }
+}
+await runHost(captureArgs, { timeoutMs: 600_000 });
 console.log('[capture] done');

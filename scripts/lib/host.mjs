@@ -70,18 +70,34 @@ function hostCommand(kind) {
     // Direct exe spawn (no shell) so child.kill() reaches the host process itself.
     return { script: path.join(rustHostBin, rustHostScript()), cwd: rustHostBin, shell: false };
   }
+  // Consumer mode: IMGUI_HOST_CLASSPATH holds the consumer project's classpath
+  // (its stories + its product classes). Run the host main with both joined,
+  // equivalent to the README's
+  //   java -cp "your-mod-classpath;imgui-storybook-host/*" ...HostMain
+  const consumerCp = process.env.IMGUI_HOST_CLASSPATH;
+  if (consumerCp) {
+    const sep = isWindows() ? ';' : ':';
+    const hostLib = path.join(javaHostDir, 'host', 'build', 'install', 'host', 'lib', '*');
+    return { java: true, classpath: `${consumerCp}${sep}${hostLib}`, cwd: javaHostBin, shell: false };
+  }
   return { script: javaHostScript(), cwd: javaHostBin, shell: isWindows() };
+}
+
+function spawnArgsFor(cmd, args) {
+  return cmd.java
+    ? ['-cp', cmd.classpath, 'com.lattestudio.imguistorybook.host.HostMain', ...args]
+    : args;
 }
 
 /** Runs the host with the given args and resolves with its stdout. */
 export function runHost(args, { timeoutMs = 120_000 } = {}, kind = resolveHostKind()) {
   ensureHostBuilt(kind);
-  const { script, cwd, shell } = hostCommand(kind);
+  const cmd = hostCommand(kind);
   return new Promise((resolve, reject) => {
-    const child = spawn(script, args, {
-      cwd,
+    const child = spawn(cmd.java ? 'java' : cmd.script, spawnArgsFor(cmd, args), {
+      cwd: cmd.cwd,
       stdio: ['ignore', 'pipe', 'inherit'],
-      shell,
+      shell: cmd.shell,
       windowsHide: true,
     });
     let stdout = '';
@@ -105,11 +121,11 @@ export function runHost(args, { timeoutMs = 120_000 } = {}, kind = resolveHostKi
 /** Spawns the host without waiting; resolves the child process. */
 export function spawnHost(args, kind = resolveHostKind()) {
   ensureHostBuilt(kind);
-  const { script, cwd, shell } = hostCommand(kind);
-  return spawn(script, args, {
-    cwd,
+  const cmd = hostCommand(kind);
+  return spawn(cmd.java ? 'java' : cmd.script, spawnArgsFor(cmd, args), {
+    cwd: cmd.cwd,
     stdio: 'inherit',
-    shell,
+    shell: cmd.shell,
     windowsHide: true,
   });
 }

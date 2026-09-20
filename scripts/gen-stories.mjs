@@ -93,7 +93,9 @@ ${presetExports ? `\n${presetExports}\n` : ''}`;
 
 async function main() {
   console.log('[gen] asking host for the story catalog...');
-  const catalogJson = await runHost(['--list', '--json']);
+  const listArgs = ['--list', '--json'];
+  if (process.argv.includes('--no-demo')) listArgs.push('--no-demo');
+  const catalogJson = await runHost(listArgs);
   const catalog = JSON.parse(catalogJson);
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
