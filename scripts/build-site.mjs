@@ -33,7 +33,7 @@ function buildStoriesMarkdown(catalog, captures) {
   lines.push('# ImGui Storybook — Stories');
   lines.push('');
   lines.push(
-    `> Rendered by the real Dear ImGui ${catalog.dearImgui} (imgui-java ${catalog.imguiJavaVersion}, host ${catalog.hostVersion}). ` +
+    `> Rendered by the real Dear ImGui ${catalog.dearImgui} (binding ${catalog.imguiJavaVersion}, host ${catalog.hostVersion}). ` +
       `Canvas ${captures.width}×${captures.height}. Generated ${captures.generatedAt}.`,
   );
   lines.push('');

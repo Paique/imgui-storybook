@@ -107,7 +107,7 @@ async function main() {
   console.log(
     `[gen] wrote ${catalog.stories.length} story files (${presets} presets) to ${path.relative(paths.root, outDir)}`,
   );
-  console.log(`[gen] host ${catalog.hostVersion} · imgui-java ${catalog.imguiJavaVersion} · Dear ImGui ${catalog.dearImgui}`);
+  console.log(`[gen] host ${catalog.hostVersion} · binding ${catalog.imguiJavaVersion} · Dear ImGui ${catalog.dearImgui}`);
   const leftovers = await readdir(path.dirname(outDir));
   console.log(`[gen] stories dir now: ${leftovers.join(', ')}`);
 }

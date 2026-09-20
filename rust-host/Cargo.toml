@@ -1,0 +1,34 @@
+[package]
+name = "imgui-storybook-rust-host"
+version = "0.1.0"
+edition = "2021"
+description = "Rust host of imgui-storybook: offscreen Dear ImGui renderer with WebSocket streaming, mirrors the Java host wire protocol"
+license = "MIT"
+
+[[bin]]
+name = "host"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+base64 = "0.22"
+jpeg-encoder = "0.6"
+png = "0.17"
+
+# Dear ImGui binding (tracks upstream 1.92.x) + OpenGL renderer (glow-based).
+easy-imgui = "0.24"
+easy-imgui-renderer = "0.24"
+easy-imgui-sys = "0.24"
+
+# Hidden window + GL context, no C toolchain needed (unlike GLFW).
+winit = "0.30"
+glutin = "0.32"
+glutin-winit = "0.5"
+raw-window-handle = "0.6"
+
+# WebSocket server (tokio ecosystem).
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "time", "sync"] }
+tokio-tungstenite = "0.24"
+futures-util = "0.3"

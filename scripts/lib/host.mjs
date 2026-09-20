@@ -6,34 +6,79 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const javaHostDir = path.join(root, 'java-host');
-const hostBin = path.join(javaHostDir, 'host', 'build', 'install', 'host', 'bin');
+const javaHostBin = path.join(javaHostDir, 'host', 'build', 'install', 'host', 'bin');
+const rustHostDir = path.join(root, 'rust-host');
+const rustHostBin = path.join(rustHostDir, 'target', 'release');
 
 function isWindows() {
   return process.platform === 'win32';
 }
 
-/** Gradle builds the host distribution if needed. Throws with output on failure. */
-export function ensureHostBuilt() {
-  const script = isWindows() ? 'host.bat' : 'host';
-  if (existsSync(path.join(hostBin, script))) return;
+/**
+ * Which host to use: `--host rust|java` (anywhere in argv), `IMGUI_HOST` env, or java.
+ * Both hosts speak the same WebSocket protocol and expose the same CLI.
+ */
+export function resolveHostKind() {
+  const i = process.argv.indexOf('--host');
+  const fromArgv = i !== -1 ? process.argv[i + 1] : undefined;
+  const kind = (fromArgv || process.env.IMGUI_HOST || 'java').toLowerCase();
+  if (kind !== 'java' && kind !== 'rust') {
+    throw new Error(`unknown host "${kind}" — use --host java|rust or IMGUI_HOST=java|rust`);
+  }
+  return kind;
+}
+
+function javaHostScript() {
+  return isWindows() ? 'host.bat' : 'host';
+}
+
+function rustHostScript() {
+  return isWindows() ? 'host.exe' : 'host';
+}
+
+/** Gradle/cargo build the host distribution if needed. Throws with output on failure. */
+export function ensureHostBuilt(kind = resolveHostKind()) {
+  if (kind === 'rust') {
+    const bin = path.join(rustHostBin, rustHostScript());
+    if (existsSync(bin)) return;
+    console.log('[host] building rust host (release, first run)...');
+    const result = spawnSync('cargo', ['build', '--release'], {
+      cwd: rustHostDir,
+      stdio: ['ignore', 'inherit', 'inherit'],
+      shell: isWindows(),
+    });
+    if (result.status !== 0 || !existsSync(bin)) {
+      throw new Error('failed to build the rust host — run cargo build --release in rust-host/ manually');
+    }
+    return;
+  }
+  const script = javaHostScript();
+  if (existsSync(path.join(javaHostBin, script))) return;
   console.log('[host] building java host distribution (first run)...');
   const result = spawnSync(isWindows() ? 'gradlew.bat' : './gradlew', ['-q', ':host:installDist'], {
     cwd: javaHostDir,
     stdio: ['ignore', 'inherit', 'inherit'],
     shell: isWindows(),
   });
-  if (result.status !== 0 || !existsSync(path.join(hostBin, script))) {
+  if (result.status !== 0 || !existsSync(path.join(javaHostBin, script))) {
     throw new Error('failed to build the java host — run java-host/gradlew :host:installDist manually');
   }
 }
 
+function hostCommand(kind) {
+  if (kind === 'rust') {
+    return { script: rustHostScript(), cwd: rustHostBin };
+  }
+  return { script: javaHostScript(), cwd: javaHostBin };
+}
+
 /** Runs the host with the given args and resolves with its stdout. */
-export function runHost(args, { timeoutMs = 120_000 } = {}) {
-  ensureHostBuilt();
-  const script = isWindows() ? 'host.bat' : 'host';
+export function runHost(args, { timeoutMs = 120_000 } = {}, kind = resolveHostKind()) {
+  ensureHostBuilt(kind);
+  const { script, cwd } = hostCommand(kind);
   return new Promise((resolve, reject) => {
     const child = spawn(script, args, {
-      cwd: hostBin,
+      cwd,
       stdio: ['ignore', 'pipe', 'inherit'],
       shell: isWindows(),
       windowsHide: true,
@@ -57,15 +102,19 @@ export function runHost(args, { timeoutMs = 120_000 } = {}) {
 }
 
 /** Spawns the host without waiting; resolves the child process. */
-export function spawnHost(args) {
-  ensureHostBuilt();
-  const script = isWindows() ? 'host.bat' : 'host';
+export function spawnHost(args, kind = resolveHostKind()) {
+  ensureHostBuilt(kind);
+  const { script, cwd } = hostCommand(kind);
   return spawn(script, args, {
-    cwd: hostBin,
+    cwd,
     stdio: 'inherit',
     shell: isWindows(),
     windowsHide: true,
   });
 }
 
-export const paths = { root, javaHostDir };
+export function hostLabel(kind = resolveHostKind()) {
+  return kind === 'rust' ? 'rust host' : 'java host';
+}
+
+export const paths = { root, javaHostDir, rustHostDir };

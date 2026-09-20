@@ -14,7 +14,8 @@
     "capture": "node scripts/capture.mjs",
     "dev": "node scripts/dev.mjs",
     "build:site": "node scripts/build-site.mjs",
-    "test:java": "cd java-host && ./gradlew --quiet test"
+    "test:java": "cd java-host && ./gradlew --quiet test",
+    "test:rust": "cd rust-host && cargo test"
   },
   "engines": {
     "node": ">=20"

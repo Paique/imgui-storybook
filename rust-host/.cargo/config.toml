@@ -1,0 +1,4 @@
+# libclang for bindgen (easy-imgui-sys). Installed via `winget install LLVM.LLVM`.
+# Adjust if LLVM lives elsewhere on your machine.
+[env]
+LIBCLANG_PATH = "C:\\Program Files\\LLVM\\bin"
