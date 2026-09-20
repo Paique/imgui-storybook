@@ -165,4 +165,4 @@ host --capture [--out DIR] [--themes light,dark] [--scales 1,2]
 
 ## License
 
-MIT © Latte Studios. Built on [Storybook](https://github.com/storybookjs/storybook) (MIT), [imgui-java](https://github.com/SpaiR/imgui-java) (MIT), [easy-imgui](https://github.com/rodrigorc/easy-imgui-rs) (MIT), [Dear ImGui](https://github.com/ocornut/imgui) (MIT), [LWJGL](https://www.lwjgl.org) (BSD).
+MIT © Paique. Built on [Storybook](https://github.com/storybookjs/storybook) (MIT), [imgui-java](https://github.com/SpaiR/imgui-java) (MIT), [easy-imgui](https://github.com/rodrigorc/easy-imgui-rs) (MIT), [Dear ImGui](https://github.com/ocornut/imgui) (MIT), [LWJGL](https://www.lwjgl.org) (BSD).
