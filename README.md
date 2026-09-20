@@ -16,11 +16,9 @@ Storybook's story workflow (sidebar, Controls, docs, static export) applied to i
 
 ## Why it looks exactly like your app
 
-The Java host uses `io.github.spair:imgui-java:1.92.7.1` — the same binding, native binaries and GLFW/OpenGL3 backend classes that [`cn.enaium:fabric-gui-imgui`](https://github.com/Enaium/fabric-mod-ImGui)-based Minecraft mods run. Rendering happens in the same Dear ImGui `1.92.7` (docking) native code, so captures and live frames are pixel-faithful by construction, not by imitation.
+Dear ImGui is immediate mode: the same widget calls your product makes every frame are the only thing that can render it faithfully. The java host runs `io.github.spair:imgui-java:1.92.7.1` with the standard LWJGL GLFW/OpenGL3 backends — the stack any pure-Java Dear ImGui app sits on, whether it draws over OpenGL, Vulkan or an engine layer: desktop tools, editors, game UIs, in-game overlays, Minecraft mods. The rust host does the same on [easy-imgui](https://crates.io/crates/easy-imgui) (upstream `1.92.9b`). Pick whichever host matches your product; captures and live frames are pixel-faithful by construction, not by imitation.
 
-The rust host follows the same principle: it renders with [easy-imgui](https://crates.io/crates/easy-imgui) 0.24 (upstream Dear ImGui `1.92.9b`) and no platform backend, so the frames come straight from the same widget code your Rust app runs. Pick whichever host matches the language of your product; the web layer is identical for both.
-
-To document **your** product's look, implement a `StoryTheme` (Java) / `StoryTheme`-style fonts+style hook (Rust: `style.FontScaleMain` and the theme hook in `rust-host/src/imgui_host.rs`), load the same TTFs and colors as your app, and register your stories — see below.
+To document **your** product's look, implement a `StoryTheme` (Java) / the fonts+style hook (`rust-host/src/imgui_host.rs`, using `style.FontScaleMain`), load the same TTFs and colors as your app, and register your stories — see below.
 
 ## Repository layout
 
@@ -163,7 +161,7 @@ host --capture [--out DIR] [--themes light,dark] [--scales 1,2]
 
 - Version pinning is part of the contract: keep `imguiJavaVersion` in `java-host/gradle.properties` equal to the imgui-java version your product ships with (the `+imgui.x.y.z` suffix in `fabric-gui-imgui` versions tells you which). On the rust host, keep `BINDING_VERSION` in `rust-host/src/info.rs` in sync with the `easy-imgui` dependency.
 - The offscreen renderer uses an exact-size FBO (hidden windows report a 0×0 framebuffer on Windows) with `DisplayFramebufferScale` forced to 1 — output is deterministic across machines and DPI settings.
-- MC 26.2+ note: `fabric-gui-imgui` versions for Minecraft 26.2/26.3 switch to a custom Blaze3D renderer; captures then reflect the GLFW/OpenGL path, which may differ slightly from the in-game one.
+- If your product draws ImGui through its own rendering stack instead of the platform GL backends (a Minecraft mod rendering via Blaze3D, an engine-integrated Vulkan renderer, …), captures reflect the host's GLFW/OpenGL path and may differ slightly from the in-game image. Document the delta in the story description where it matters.
 
 ## License
 
