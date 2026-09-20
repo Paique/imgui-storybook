@@ -18,7 +18,9 @@ Storybook's story workflow (sidebar, Controls, docs, static export) applied to i
 
 The Java host uses `io.github.spair:imgui-java:1.92.7.1` — the same binding, native binaries and GLFW/OpenGL3 backend classes that [`cn.enaium:fabric-gui-imgui`](https://github.com/Enaium/fabric-mod-ImGui)-based Minecraft mods run. Rendering happens in the same Dear ImGui `1.92.7` (docking) native code, so captures and live frames are pixel-faithful by construction, not by imitation.
 
-To document **your** product's look, implement [`StoryTheme`](java-host/api/src/main/java/com/lattestudio/imguistorybook/api/StoryTheme.java) (load the same TTFs, apply the same style/colors as your app) and register your stories — see below.
+The rust host follows the same principle: it renders with [easy-imgui](https://crates.io/crates/easy-imgui) 0.24 (upstream Dear ImGui `1.92.9b`) and no platform backend, so the frames come straight from the same widget code your Rust app runs. Pick whichever host matches the language of your product; the web layer is identical for both.
+
+To document **your** product's look, implement a `StoryTheme` (Java) / `StoryTheme`-style fonts+style hook (Rust: `style.FontScaleMain` and the theme hook in `rust-host/src/imgui_host.rs`), load the same TTFs and colors as your app, and register your stories — see below.
 
 ## Repository layout
 
@@ -32,7 +34,9 @@ To document **your** product's look, implement [`StoryTheme`](java-host/api/src/
 | `app` | The Storybook app (`@storybook/html-vite`) + toolbar globals (theme, scale, backdrop, canvas mode). |
 | `scripts` | Orchestration: `gen-stories.mjs`, `capture.mjs`, `dev.mjs`, `build-site.mjs`. |
 
-## Quick start (Windows, JDK 25+, Node 20+)
+## Quick start (Windows, JDK 25+ and/or Rust toolchain, Node 20+)
+
+Java host needs a JDK 25; rust host needs a current Rust toolchain (`rustup`) and **libclang** for bindgen (`winget install LLVM.LLVM` — `rust-host/.cargo/config.toml` points `LIBCLANG_PATH` at the default install location).
 
 ```bash
 npm install
@@ -99,6 +103,44 @@ npm run dev   # storybook picks it up on ws://localhost:8765
 ```
 
 Regenerate the CSF bridge after adding stories: `npm run gen`.
+
+## Writing stories (Rust)
+
+The rust host speaks the same concepts: implement the `Story` trait, declare typed args, and register on a `StoryRegistry`. `rust-host/src/demo/` has all 16 ported stories as reference.
+
+```rust
+use imgui_storybook_rust_host::api::{ArgSet, ArgValue, Story};
+use imgui_storybook_rust_host::ctx::{StoryCtx, StoryUi};
+use imgui_storybook_rust_host::easy_imgui::lbl;
+
+pub struct StatusChipStory;
+
+impl Story for StatusChipStory {
+    fn title(&self) -> &str { "Widgets/Status Chip" }   // '/' = sidebar groups
+
+    fn description(&self) -> &str { "Chip with tone per status enum." }
+
+    fn define_args(&self, args: &mut ArgSet) {
+        args.string("label", "Em andamento")
+            .enum_of("status", &["Open", "Progress", "Done"], "Progress")
+            .preset("compacto", [("label", ArgValue::from("Ok"))]);
+    }
+
+    fn render(&mut self, ui: &StoryUi, ctx: &mut StoryCtx) {
+        // draw with the easy-imgui Ui, exactly as in your product
+        chip(ui, &ctx.enum_str("status"), &ctx.string("label"));
+        if ui.button(lbl("confirm")) {
+            ctx.action("clicked");   // shows as a toast + WS event
+        }
+    }
+}
+```
+
+Unlike the Java `ServiceLoader` discovery, registration is in code: `rust-host/src/main.rs` calls `demo::register_all(&mut registry)` for the built-in stories — to document your own product, depend on the crate (`imgui-storybook-rust-host`), build your `StoryRegistry` and call `serve::run(&cli, &mut registry)` from your own binary. Then point the tooling at it:
+
+```bash
+npm run dev -- --host rust
+```
 
 ## Commands (both hosts — same CLI)
 
