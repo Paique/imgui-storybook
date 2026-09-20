@@ -65,15 +65,33 @@ pub fn run(cli: &Cli, registry: &mut StoryRegistry) -> Result<()> {
             gl.framebuffer_height(),
         )
         .to_string();
-        let port = cli.port;
         let tx = tx.clone();
         let net_thread = net_state.clone();
+
+        // Bind on the calling thread so a port conflict fails loudly (and instantly) instead
+        // of leaving a mute render loop; SO_REUSEADDR lets the dev watcher restart the host
+        // without waiting for TIME_WAIT to drain.
+        let addr: std::net::SocketAddr = ([0, 0, 0, 0], cli.port)
+            .try_into()
+            .expect("valid listen addr");
+        let socket = socket2::Socket::new(
+            socket2::Domain::IPV4,
+            socket2::Type::STREAM,
+            Some(socket2::Protocol::TCP),
+        )?;
+        socket.set_reuse_address(true)?;
+        socket.set_nonblocking(true)?;
+        socket.bind(&addr.into())?;
+        socket.listen(128)?;
+        let listener: std::net::TcpListener = socket.into();
+
         std::thread::Builder::new()
             .name("ws-server".into())
             .spawn(move || {
                 rt.block_on(async move {
-                    if let Err(e) = net::run_ws(port, hello, net_thread, tx).await {
+                    if let Err(e) = net::run_ws(listener, hello, net_thread, tx).await {
                         eprintln!("ws server error: {e:#}");
+                        std::process::exit(1);
                     }
                 })
             })?;

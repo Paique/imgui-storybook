@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
-use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -48,12 +47,14 @@ impl NetState {
 }
 
 pub async fn run_ws(
-    port: u16,
+    listener: std::net::TcpListener,
     hello: String,
     net: Arc<NetState>,
     tx: broadcast::Sender<Arc<String>>,
 ) -> Result<()> {
-    let listener = TcpListener::bind(("0.0.0.0", port)).await?;
+    // The caller binds (with SO_REUSEADDR) so port conflicts fail loudly before the
+    // render loop starts; hand the listener to tokio here.
+    let listener = tokio::net::TcpListener::from_std(listener)?;
     loop {
         let (stream, _addr) = listener.accept().await?;
         let ws = tokio_tungstenite::accept_async(stream).await;

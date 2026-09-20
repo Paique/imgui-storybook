@@ -67,20 +67,21 @@ export function ensureHostBuilt(kind = resolveHostKind()) {
 
 function hostCommand(kind) {
   if (kind === 'rust') {
-    return { script: rustHostScript(), cwd: rustHostBin };
+    // Direct exe spawn (no shell) so child.kill() reaches the host process itself.
+    return { script: path.join(rustHostBin, rustHostScript()), cwd: rustHostBin, shell: false };
   }
-  return { script: javaHostScript(), cwd: javaHostBin };
+  return { script: javaHostScript(), cwd: javaHostBin, shell: isWindows() };
 }
 
 /** Runs the host with the given args and resolves with its stdout. */
 export function runHost(args, { timeoutMs = 120_000 } = {}, kind = resolveHostKind()) {
   ensureHostBuilt(kind);
-  const { script, cwd } = hostCommand(kind);
+  const { script, cwd, shell } = hostCommand(kind);
   return new Promise((resolve, reject) => {
     const child = spawn(script, args, {
       cwd,
       stdio: ['ignore', 'pipe', 'inherit'],
-      shell: isWindows(),
+      shell,
       windowsHide: true,
     });
     let stdout = '';
@@ -104,13 +105,23 @@ export function runHost(args, { timeoutMs = 120_000 } = {}, kind = resolveHostKi
 /** Spawns the host without waiting; resolves the child process. */
 export function spawnHost(args, kind = resolveHostKind()) {
   ensureHostBuilt(kind);
-  const { script, cwd } = hostCommand(kind);
+  const { script, cwd, shell } = hostCommand(kind);
   return spawn(script, args, {
     cwd,
     stdio: 'inherit',
-    shell: isWindows(),
+    shell,
     windowsHide: true,
   });
+}
+
+/** Kills the host and any child processes (needed for the shell-wrapped java host). */
+export function killHostTree(child) {
+  if (!child || child.pid === undefined) return;
+  if (isWindows()) {
+    spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  } else {
+    child.kill('SIGTERM');
+  }
 }
 
 export function hostLabel(kind = resolveHostKind()) {

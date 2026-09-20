@@ -823,6 +823,7 @@ dependencies = [
  "raw-window-handle",
  "serde",
  "serde_json",
+ "socket2",
  "tokio",
  "tokio-tungstenite",
  "winit",

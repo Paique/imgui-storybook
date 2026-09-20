@@ -49,6 +49,8 @@ npm run build:site
 
 `npm run dev` builds the chosen host on first run (Gradle wrapper for java, `cargo build --release` for rust). Every script accepts `--host java|rust`; `IMGUI_HOST=rust` works too.
 
+On the rust host, the dev watcher watches `rust-host/src` (and `Cargo.toml`): saving a file rebuilds and restarts the host automatically — the storybook preview reconnects on its own. `IMGUI_NO_STORYBOOK=1` runs the host alone (handy with `cargo test` in a second terminal).
+
 ## Rust host
 
 `rust-host/` is a second implementation of the same host contract in Rust: identical CLI (`--list/--serve/--capture`), identical WebSocket protocol (`hello.host: "rust"`), identical story catalog shape, captures and `captures.json`. Stories implement a `Story` trait (`rust-host/src/api.rs`) mirroring the Java API; the 16 demo stories are ported 1:1.
