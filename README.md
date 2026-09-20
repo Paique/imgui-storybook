@@ -4,6 +4,8 @@ A [Storybook](https://storybook.js.org) for [Dear ImGui](https://github.com/ocor
 
 Storybook's story workflow (sidebar, Controls, docs, static export) applied to immediate-mode GUIs. Stories run as real code on a language-specific **host** that renders Dear ImGui offscreen and streams frames to the Storybook preview; a static export of PNG captures plus structured docs makes every component readable by humans **and AI models** without running anything.
 
+![imgui-storybook running in Storybook: live rust host streaming Dear ImGui frames, sidebar groups, Controls and actions](docs/imgui-storybook.gif)
+
 ```
 ┌─────────────────────────┐   WebSocket (JSON + JPEG frames)   ┌──────────────────────────────┐
 │  Storybook web app      │ ◄──────────────────────────────►   │  host: java (default) | rust │
