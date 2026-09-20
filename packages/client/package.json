@@ -1,0 +1,12 @@
+{
+  "name": "@imgui-storybook/client",
+  "version": "0.1.0",
+  "description": "Storybook preview runtime for imgui-storybook: live canvas over WebSocket with static PNG fallback.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@imgui-storybook/protocol": "0.1.0"
+  }
+}
